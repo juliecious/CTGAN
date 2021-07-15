@@ -132,6 +132,10 @@ class CTGANSynthesizer(BaseSynthesizer):
             Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
             Defaults to ``True``.
+        dp (bool):
+            Inject random noise during optimization procedure in order to achieve
+            differential privacy. Currently only naively inject noise.
+            Defaults to ``False``.
     """
 
     def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
@@ -158,7 +162,8 @@ class CTGANSynthesizer(BaseSynthesizer):
         self.pac = pac
 
         self.dp = dp
-        print('Init CTGAN with differential privacy')
+        if self.dp:
+            print('Init CTGAN with differential privacy')
 
         if not cuda or not torch.cuda.is_available():
             device = 'cpu'

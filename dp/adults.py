@@ -37,7 +37,7 @@ if __name__ == '__main__':
     real = eval_dataset(X_train, y_train, X_test, y_test)
 
     # evaluate performance using fake data
-    samples = ctgan.sample(len(X_train)) # Synthetic copy
+    samples = ctgan.sample(len(data)) # Synthetic copy
     _samples = convert_adult_ds(samples)
     X_syn = _samples.drop(['income'], axis=1)
     y_syn = _samples['income']
