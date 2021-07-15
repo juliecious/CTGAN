@@ -1,4 +1,7 @@
 import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+from sklearn.exceptions import ConvergenceWarning
+warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
 import numpy as np
 import pandas as pd
@@ -134,7 +137,7 @@ class CTGANSynthesizer(BaseSynthesizer):
     def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True):
+                 log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True, dp=False):
 
         assert batch_size % 2 == 0
 
@@ -153,6 +156,9 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._verbose = verbose
         self._epochs = epochs
         self.pac = pac
+
+        self.dp = dp
+        print('Init CTGAN with differential privacy')
 
         if not cuda or not torch.cuda.is_available():
             device = 'cpu'
@@ -369,6 +375,10 @@ class CTGANSynthesizer(BaseSynthesizer):
                         real_cat, fake_cat, self._device, self.pac)
                     loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
+                    if self.dp:
+                        # add random gaussian noise to loss_d
+                        loss_d += torch.randn(1).item()
+
                     optimizerD.zero_grad()
                     pen.backward(retain_graph=True)
                     loss_d.backward()
@@ -399,6 +409,10 @@ class CTGANSynthesizer(BaseSynthesizer):
                     cross_entropy = self._cond_loss(fake, c1, m1)
 
                 loss_g = -torch.mean(y_fake) + cross_entropy
+
+                if self.dp:
+                    # Add random noise to loss_g
+                    loss_g += torch.randn(1).item()
 
                 optimizerG.zero_grad()
                 loss_g.backward()
