@@ -178,7 +178,7 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._sigma = sigma
         self._target_epsilon = target_epsilon
         self._target_delta = target_delta
-        if self.private:
+        if self._private:
             print('Init CTGAN with differential privacy')
 
         if not cuda or not torch.cuda.is_available():

@@ -25,7 +25,7 @@ if __name__ == '__main__':
     ]
 
     ctgan = CTGANSynthesizer(epochs=5, verbose=True, private=True)
-    ctgan.fit(data, discrete_columns)
+    ctgan.fit(data, discrete_columns, plot=True)
 
     # evaluate performance using real data
     _data = convert_adult_ds(data)
