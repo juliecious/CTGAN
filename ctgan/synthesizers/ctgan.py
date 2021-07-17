@@ -395,26 +395,27 @@ class CTGANSynthesizer(BaseSynthesizer):
                     # compute discriminator's gradient
                     loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
-                    # clamp parameters into [-0.01, 0.01]
-                    for p in discriminator.parameters():
-                        p.data.clamp_(-0.01, 0.01)
+                    if self.private:
+                        # clamp parameters into [-0.01, 0.01]
+                        for p in discriminator.parameters():
+                            p.data.clamp_(-0.01, 0.01)
 
-                    # weight clipping
-                    utils.clip_grad_norm_(discriminator.parameters(), self.clip_coeff)
+                        # weight clipping
+                        utils.clip_grad_norm_(discriminator.parameters(), self.clip_coeff)
 
-                    clipped_grads = {
-                        name: torch.zeros_like(param, dtype=torch.double) for name, param in
-                        discriminator.named_parameters()
-                    }
+                        clipped_grads = {
+                            name: torch.zeros_like(param, dtype=torch.double) for name, param in
+                            discriminator.named_parameters()
+                        }
 
-                    # add noise
-                    for name, param in discriminator.named_parameters():
-                        if param.grad is not None:
-                            noise = torch.DoubleTensor(
-                                clipped_grads[name].size()
-                            ).normal_(0, self.sigma * self.clip_coeff).to(self._device)
-                            clipped_grads[name] += param.grad + noise
-                            param.grad = clipped_grads[name].float()
+                        # add noise
+                        for name, param in discriminator.named_parameters():
+                            if param.grad is not None:
+                                noise = torch.DoubleTensor(
+                                    clipped_grads[name].size()
+                                ).normal_(0, self.sigma * self.clip_coeff).to(self._device)
+                                clipped_grads[name] += param.grad + noise
+                                param.grad = clipped_grads[name].float()
 
                     optimizerD.zero_grad()
                     pen.backward(retain_graph=True)
@@ -446,10 +447,6 @@ class CTGANSynthesizer(BaseSynthesizer):
                     cross_entropy = self._cond_loss(fake, c1, m1)
 
                 loss_g = -torch.mean(y_fake) + cross_entropy
-
-                if self.private:
-                    # Add random noise to loss_g
-                    loss_g += torch.randn(1).item()
 
                 optimizerG.zero_grad()
                 loss_g.backward()
