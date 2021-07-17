@@ -490,7 +490,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                 #       f"Loss D: {loss_d.detach().cpu(): .4f}",
                 #       flush=True)
 
-    def plot_losses(self):
+    def plot_losses(self, save=False):
         plt.figure(figsize=(10, 5))
         plt.title("Generator and Discriminator Loss during training")
         plt.plot(self._G_losses, label='G')
@@ -499,6 +499,9 @@ class CTGANSynthesizer(BaseSynthesizer):
         plt.ylabel('Loss')
         plt.legend()
         plt.show()
+
+        if save:
+            plt.savefig('losses.png')
 
     def sample(self, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.
