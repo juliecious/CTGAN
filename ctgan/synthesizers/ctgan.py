@@ -410,7 +410,9 @@ class CTGANSynthesizer(BaseSynthesizer):
                     # add noise
                     for name, param in discriminator.named_parameters():
                         if param.grad is not None:
-                            noise = torch.DoubleTensor(clipped_grads[name].size()).normal_(0, self.sigma * self.clip_coeff).to(self._device)
+                            noise = torch.DoubleTensor(
+                                clipped_grads[name].size()
+                            ).normal_(0, self.sigma * self.clip_coeff).to(self._device)
                             clipped_grads[name] += param.grad + noise
                             param.grad = clipped_grads[name].float()
 

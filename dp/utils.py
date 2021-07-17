@@ -32,10 +32,6 @@ def eval_dataset(X, y, X_test, y_test):
         avg_auroc += auc_score
         avg_auprc += auprc
 
-        # print('-' * 60)
-        # print(f'{model_name:<30} acc {round(acc, 4):>5}\t f1 score {round(f1, 4):>5}\t '
-        #       f'auroc {round(auc_score, 4):>5}\t auprc {round(auprc, 4):>5}')
-
     N = len(learners)
     avg_acc, avg_f1, avg_auroc, avg_auprc = avg_acc/N, avg_f1/N, avg_auroc/N, avg_auprc/N
     print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '

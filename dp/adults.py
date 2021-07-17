@@ -44,4 +44,3 @@ if __name__ == '__main__':
     print('\nTrain on fake, test on real')
     fake = eval_dataset(X_syn, y_syn, X_test, y_test)
 
-    print(len(X_train), len(X_syn))
