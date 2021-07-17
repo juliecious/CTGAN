@@ -24,7 +24,7 @@ if __name__ == '__main__':
         'income'
     ]
 
-    ctgan = CTGANSynthesizer(epochs=500, verbose=True, private=False)
+    ctgan = CTGANSynthesizer(epochs=5, verbose=True, private=True)
     ctgan.fit(data, discrete_columns)
 
     # evaluate performance using real data
