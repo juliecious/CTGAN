@@ -307,7 +307,6 @@ class CTGANSynthesizer(BaseSynthesizer):
                 a ``pandas.DataFrame``, this list should contain the column names.
         """
         self._validate_discrete_columns(train_data, discrete_columns)
-        self._plot = plot
 
         self._transformer = DataTransformer()
         self._transformer.fit(train_data, discrete_columns)
