@@ -10,6 +10,8 @@ from packaging import version
 
 from torch import optim
 from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional, utils
+
+import matplotlib
 import matplotlib.pyplot as plt
 
 from ctgan.data_sampler import DataSampler
@@ -153,7 +155,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
                  log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
-                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=1e-5, target_delta=1e-5):
+                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=5e-5, target_delta=1e-5):
 
         assert batch_size % 2 == 0
 
