@@ -294,7 +294,7 @@ class CTGANSynthesizer(BaseSynthesizer):
         if invalid_columns:
             raise ValueError('Invalid columns found: {}'.format(invalid_columns))
 
-    def fit(self, train_data, discrete_columns=tuple(), plot=False):
+    def fit(self, train_data, discrete_columns=tuple()):
         """Fit the CTGAN Synthesizer models to the training data.
 
         Args:
@@ -347,8 +347,8 @@ class CTGANSynthesizer(BaseSynthesizer):
         std = mean + 1
 
         i = 0
-        G_losses = []
-        D_losses = []
+        self._G_losses = []
+        self._D_losses = []
         epsilon = 0
         print("Starting Training Loop...")
 
@@ -464,8 +464,8 @@ class CTGANSynthesizer(BaseSynthesizer):
                 optimizerG.step()  # Update G
 
             # Save Losses for plotting later
-            G_losses.append(loss_g.item())
-            D_losses.append(loss_d.item())
+            self._G_losses.append(loss_g.item())
+            self._D_losses.append(loss_d.item())
 
             if self._private:
                 # calculate current privacy cost using the accountant
@@ -491,15 +491,15 @@ class CTGANSynthesizer(BaseSynthesizer):
                 #       f"Loss D: {loss_d.detach().cpu(): .4f}",
                 #       flush=True)
 
-        if self._plot:
-            plt.figure(figsize=(10, 5))
-            plt.title("Generator and Discriminator Loss during training")
-            plt.plot(G_losses, label='G')
-            plt.plot(D_losses, label='D')
-            plt.xlabel('iterations')
-            plt.ylabel('Loss')
-            plt.legend()
-            plt.show()
+    def plot_losses(self):
+        plt.figure(figsize=(10, 5))
+        plt.title("Generator and Discriminator Loss during training")
+        plt.plot(self._G_losses, label='G')
+        plt.plot(self._D_losses, label='D')
+        plt.xlabel('iterations')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.show()
 
     def sample(self, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.
