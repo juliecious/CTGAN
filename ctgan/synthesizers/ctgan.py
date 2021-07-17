@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from ctgan.data_sampler import DataSampler
 from ctgan.data_transformer import DataTransformer
 from ctgan.synthesizers.base import BaseSynthesizer
-from dp.rdp_accountant import compute_rdp, get_privacy_spent
+from ctgan.rdp_accountant import compute_rdp, get_privacy_spent
 
 
 class Discriminator(Module):
