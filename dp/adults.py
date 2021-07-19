@@ -27,7 +27,7 @@ if __name__ == '__main__':
         'income'
     ]
 
-    ctgan = CTGANSynthesizer(epochs=10, verbose=True, private=True)
+    ctgan = CTGANSynthesizer(epochs=6, verbose=True, private=True)
     ctgan.fit(data, discrete_columns)
     ctgan.plot_losses(save=True)
 
@@ -57,5 +57,5 @@ if __name__ == '__main__':
     plt.bar(X + 0.25, tstr, width=0.25)
     plt.xticks(X + 0.25, metrics)
     plt.legend(['TRTR', 'TSTR'])
-    plt.show()
     plt.savefig('comparison.png')
+    plt.show()

@@ -244,7 +244,6 @@ def compute_rdp(q, noise_multiplier, steps, orders):
   else:
     rdp = np.array([_compute_rdp(q, noise_multiplier, order)
                     for order in orders])
-
   return rdp * steps
 
 

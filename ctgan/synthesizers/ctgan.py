@@ -155,7 +155,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
                  log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
-                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=2e-5, target_delta=1e-5):
+                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
 
         assert batch_size % 2 == 0
 
@@ -181,7 +181,8 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._target_epsilon = target_epsilon
         self._target_delta = target_delta
         if self._private:
-            print('Init CTGAN with differential privacy')
+            print(f'Init CTGAN with differential privacy. '
+                  f'Target epsilon: {self._target_epsilon}')
 
         if not cuda or not torch.cuda.is_available():
             device = 'cpu'
@@ -351,13 +352,12 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._G_losses = []
         self._D_losses = []
         epsilon = 0
+        steps = 0
         print("Starting Training:")
 
-        # while epsilon < self._target_epsilon:
-
         steps_per_epoch = max(len(train_data) // self._batch_size, 1)
-
-        for i in range(self._epochs):
+        while epsilon < self._target_epsilon:
+        # for i in range(self._epochs):
             for id_ in range(steps_per_epoch):
 
                 ############################
@@ -385,6 +385,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                                 ).normal_(0, self._sigma * self._clip_coeff).to(self._device)
                                 clipped_grads[name] += param.grad + noise
                                 param.grad = clipped_grads[name].float()
+                        steps += 1
 
                     # train with fake
                     fakez = torch.normal(mean=mean, std=std)
@@ -475,19 +476,16 @@ class CTGANSynthesizer(BaseSynthesizer):
                 lmbds = range(2, max_lmbd + 1)
                 rdp = compute_rdp(self._batch_size / len(train_data),
                                   self._sigma,
-                                  steps_per_epoch,
+                                  steps,
                                   lmbds)
-                epsilon, _, _ = get_privacy_spent(lmbds, rdp, self._target_delta)
+                epsilon, _, _ = get_privacy_spent(lmbds, rdp, None, self._target_delta)
 
             # Output training stats
             if self._verbose:
                 print(f"Epoch {i + 1}, "
                       f"Loss G: {loss_g.detach().cpu(): .4f}, "
                       f"Loss D: {loss_d.detach().cpu(): .4f}, "
-                      f"Epsilon: {epsilon:.5f}, "
-                      f"Target Epsilon: {self._target_epsilon:.5f}",
-
-                      flush=True)
+                      f"Epsilon: {epsilon:.4f}", flush=True)
                 i += 1
                 # print(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
                 #       f"Loss D: {loss_d.detach().cpu(): .4f}",
@@ -502,12 +500,12 @@ class CTGANSynthesizer(BaseSynthesizer):
         plt.ylabel('Loss')
         x_ticks = np.arange(0, len(self._G_losses), len(self._G_losses)//5)
         plt.xticks(x_ticks)
-
         plt.legend()
-        plt.show()
-
         if save:
             plt.savefig('losses.png')
+        plt.show()
+
+
 
     def sample(self, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.
