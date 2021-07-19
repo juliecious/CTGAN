@@ -128,6 +128,8 @@ class CTGANSynthesizer(BaseSynthesizer):
             sampling. Defaults to ``True``.
         verbose (boolean):
             Whether to have print statements for progress results. Defaults to ``False``.
+        epochs (int):
+            Number of training epochs. Defaults to 300.
         pac (int):
             Number of samples to group together when applying the discriminator.
             Defaults to 10.
@@ -152,7 +154,7 @@ class CTGANSynthesizer(BaseSynthesizer):
     def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, pac=10, cuda=True,
+                 log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
                  private=False, clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
 
         assert batch_size % 2 == 0
@@ -170,6 +172,7 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._discriminator_steps = discriminator_steps
         self._log_frequency = log_frequency
         self._verbose = verbose
+        self._epochs = epochs
         self.pac = pac
 
         self._private = private
@@ -477,6 +480,9 @@ class CTGANSynthesizer(BaseSynthesizer):
                                   steps,
                                   lmbds)
                 epsilon, _, _ = get_privacy_spent(lmbds, rdp, None, self._target_delta)
+            else:
+                if i > self._epochs:
+                    epsilon = np.inf
 
             # Output training stats
             if self._verbose:
@@ -493,7 +499,8 @@ class CTGANSynthesizer(BaseSynthesizer):
         plt.plot(self._D_losses, label='D')
         plt.xlabel('iterations')
         plt.ylabel('Loss')
-        x_ticks = np.arange(0, len(self._G_losses), len(self._G_losses)//5)
+        interval = len(self._G_losses)//5 if len(self._G_losses) > 5 else len(self._G_losses)
+        x_ticks = np.arange(0, len(self._G_losses), interval)
         plt.xticks(x_ticks)
         plt.legend()
         if save:
