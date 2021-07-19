@@ -128,8 +128,6 @@ class CTGANSynthesizer(BaseSynthesizer):
             sampling. Defaults to ``True``.
         verbose (boolean):
             Whether to have print statements for progress results. Defaults to ``False``.
-        epochs (int):
-            Number of training epochs. Defaults to 300.
         pac (int):
             Number of samples to group together when applying the discriminator.
             Defaults to 10.
@@ -154,7 +152,7 @@ class CTGANSynthesizer(BaseSynthesizer):
     def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
+                 log_frequency=True, verbose=False, pac=10, cuda=True,
                  private=False, clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
 
         assert batch_size % 2 == 0
@@ -172,7 +170,6 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._discriminator_steps = discriminator_steps
         self._log_frequency = log_frequency
         self._verbose = verbose
-        self._epochs = epochs
         self.pac = pac
 
         self._private = private
@@ -353,11 +350,12 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._D_losses = []
         epsilon = 0
         steps = 0
-        print("Starting Training:")
+        print("\nStarting Training:\n")
 
         steps_per_epoch = max(len(train_data) // self._batch_size, 1)
+
         while epsilon < self._target_epsilon:
-        # for i in range(self._epochs):
+
             for id_ in range(steps_per_epoch):
 
                 ############################
@@ -487,9 +485,6 @@ class CTGANSynthesizer(BaseSynthesizer):
                       f"Loss D: {loss_d.detach().cpu(): .4f}, "
                       f"Epsilon: {epsilon:.4f}", flush=True)
                 i += 1
-                # print(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
-                #       f"Loss D: {loss_d.detach().cpu(): .4f}",
-                #       flush=True)
 
     def plot_losses(self, save=False):
         plt.figure(figsize=(10, 5))
