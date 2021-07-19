@@ -155,7 +155,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
                  log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
-                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=5e-5, target_delta=1e-5):
+                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=2e-5, target_delta=1e-5):
 
         assert batch_size % 2 == 0
 
@@ -351,22 +351,45 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._G_losses = []
         self._D_losses = []
         epsilon = 0
-        print("Starting Training Loop...")
+        print("Starting Training:")
 
-        while epsilon < self._target_epsilon:
+        # while epsilon < self._target_epsilon:
 
-            steps_per_epoch = max(len(train_data) // self._batch_size, 1)
+        steps_per_epoch = max(len(train_data) // self._batch_size, 1)
 
-            # for i in range(epochs):
+        for i in range(self._epochs):
             for id_ in range(steps_per_epoch):
 
                 ############################
-                # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
+                # (1) Update D network
                 ###########################
                 for n in range(self._discriminator_steps):
-                    fakez = torch.normal(mean=mean, std=std)
+                    if self._private:
+                        # clamp parameters into [-0.01, 0.01]
+                        for p in discriminator.parameters():
+                            p.data.clamp_(-0.01, 0.01)
 
+                        # weight clipping
+                        utils.clip_grad_norm_(discriminator.parameters(), self._clip_coeff)
+
+                        clipped_grads = {
+                            name: torch.zeros_like(param, dtype=torch.double) for name, param in
+                            discriminator.named_parameters()
+                        }
+
+                        # add noise
+                        for name, param in discriminator.named_parameters():
+                            if param.grad is not None:
+                                noise = torch.DoubleTensor(
+                                    clipped_grads[name].size()
+                                ).normal_(0, self._sigma * self._clip_coeff).to(self._device)
+                                clipped_grads[name] += param.grad + noise
+                                param.grad = clipped_grads[name].float()
+
+                    # train with fake
+                    fakez = torch.normal(mean=mean, std=std)
                     condvec = self._data_sampler.sample_condvec(self._batch_size)
+
                     if condvec is None:
                         c1, m1, col, opt = None, None, None, None
                         real = self._data_sampler.sample_data(self._batch_size, col, opt)
@@ -395,34 +418,12 @@ class CTGANSynthesizer(BaseSynthesizer):
                         fake_cat = fake
 
                     y_fake = discriminator(fake_cat)
-                    y_real = discriminator(real_cat)  # Forward pass
+                    y_real = discriminator(real_cat)
 
                     pen = discriminator.calc_gradient_penalty(
                         real_cat, fake_cat, self._device, self.pac)
 
-                    loss_d = -(torch.mean(y_real) - torch.mean(y_fake))  # Calculate loss
-
-                    if self._private:
-                        # clamp parameters into [-0.01, 0.01]
-                        for p in discriminator.parameters():
-                            p.data.clamp_(-0.01, 0.01)
-
-                        # weight clipping
-                        utils.clip_grad_norm_(discriminator.parameters(), self._clip_coeff)
-
-                        clipped_grads = {
-                            name: torch.zeros_like(param, dtype=torch.double) for name, param in
-                            discriminator.named_parameters()
-                        }
-
-                        # add noise
-                        for name, param in discriminator.named_parameters():
-                            if param.grad is not None:
-                                noise = torch.DoubleTensor(
-                                    clipped_grads[name].size()
-                                ).normal_(0, self._sigma * self._clip_coeff).to(self._device)
-                                clipped_grads[name] += param.grad + noise
-                                param.grad = clipped_grads[name].float()
+                    loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
                     optimizerD.zero_grad()
                     pen.backward(retain_graph=True)
@@ -430,7 +431,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                     optimizerD.step()  # Update D
 
                 ############################
-                # (2) Update G network: maximize log(D(G(z)))
+                # (2) Update G network
                 ###########################
                 fakez = torch.normal(mean=mean, std=std)
                 condvec = self._data_sampler.sample_condvec(self._batch_size)
@@ -464,13 +465,13 @@ class CTGANSynthesizer(BaseSynthesizer):
                 loss_g.backward()  # Calculate gradients for G
                 optimizerG.step()  # Update G
 
-            # Save Losses for plotting later
+            # Save losses for plotting later
             self._G_losses.append(loss_g.item())
             self._D_losses.append(loss_d.item())
 
             if self._private:
                 # calculate current privacy cost using the accountant
-                max_lmbd = 400
+                max_lmbd = 4095
                 lmbds = range(2, max_lmbd + 1)
                 rdp = compute_rdp(self._batch_size / len(train_data),
                                   self._sigma,
@@ -483,8 +484,8 @@ class CTGANSynthesizer(BaseSynthesizer):
                 print(f"Epoch {i + 1}, "
                       f"Loss G: {loss_g.detach().cpu(): .4f}, "
                       f"Loss D: {loss_d.detach().cpu(): .4f}, "
-                      f"Epsilon: {round(epsilon, 8)}, "
-                      f"Target Epsilon: {self._target_epsilon}",
+                      f"Epsilon: {epsilon:.5f}, "
+                      f"Target Epsilon: {self._target_epsilon:.5f}",
 
                       flush=True)
                 i += 1
@@ -499,6 +500,9 @@ class CTGANSynthesizer(BaseSynthesizer):
         plt.plot(self._D_losses, label='D')
         plt.xlabel('iterations')
         plt.ylabel('Loss')
+        x_ticks = np.arange(0, len(self._G_losses), len(self._G_losses)//5)
+        plt.xticks(x_ticks)
+
         plt.legend()
         plt.show()
 
