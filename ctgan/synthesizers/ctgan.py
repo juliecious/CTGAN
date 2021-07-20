@@ -496,7 +496,8 @@ class CTGANSynthesizer(BaseSynthesizer):
         plt.plot(self._D_losses, label='D')
         plt.xlabel('iterations')
         plt.ylabel('Loss')
-        x_ticks = np.arange(0, len(self._G_losses), len(self._G_losses)//5)
+        intervals = len(self._G_losses)//5 if len(self._G_losses) > 5 else len(self._G_losses)
+        x_ticks = np.arange(0, len(self._G_losses), intervals)
         plt.xticks(x_ticks)
         plt.legend()
         if save:

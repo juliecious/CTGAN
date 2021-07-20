@@ -19,7 +19,7 @@ if __name__ == '__main__':
     ctgan = CTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
-                             # clip_coeff=0.1,
+                             clip_coeff=0.15,
                              # sigma=6,
                              target_epsilon=5,
                              target_delta=1e-5
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     # evaluate performance using fake data
     samples = ctgan.sample(len(data))  # Synthetic copy
     _samples = convert_seizure_ds(samples)
+    _samples.dropna(how='any', inplace=True)
 
     X_syn = _samples.drop([target], axis=1)
     y_syn = _samples[target]
