@@ -4,7 +4,7 @@ from sklearn.exceptions import ConvergenceWarning
 warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
 from ctgan import CTGANSynthesizer
-from dp.utils import convert_cervical_ds, eval_dataset
+from utils import convert_cervical_ds, eval_dataset
 from sklearn.model_selection import train_test_split
 
 import matplotlib.pyplot as plt

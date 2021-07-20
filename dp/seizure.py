@@ -4,7 +4,7 @@ from sklearn.exceptions import ConvergenceWarning
 warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
 from ctgan import CTGANSynthesizer
-from dp.utils import convert_seizure_ds, eval_dataset
+from utils import convert_seizure_ds, eval_dataset
 from sklearn.model_selection import train_test_split
 
 import matplotlib.pyplot as plt
@@ -14,21 +14,17 @@ import pandas as pd
 if __name__ == '__main__':
     url = 'https://raw.githubusercontent.com/juliecious/sml-dataset/master/dataSets/Epileptic_Seizure_Recognition.csv'
     data = pd.read_csv(url)
-    # data = data.drop('Unnamed', axis=1)
+    data = data.drop('Unnamed', axis=1)
     target = 'y'
-
-    num_cols = data._get_numeric_data().columns
-    cols = data.columns
-    discrete_columns = list(set(cols) - set(num_cols))
     ctgan = CTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
                              # clip_coeff=0.1,
                              # sigma=6,
-                             target_epsilon=1,
+                             target_epsilon=5,
                              target_delta=1e-5
                              )
-    ctgan.fit(data, discrete_columns)
+    ctgan.fit(data)
     ctgan.plot_losses(save=True)
 
     # evaluate performance using real data

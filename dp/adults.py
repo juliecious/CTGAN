@@ -5,7 +5,7 @@ warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
 from ctgan import CTGANSynthesizer, load_demo
 from sklearn.model_selection import train_test_split
-from dp.utils import convert_adult_ds, eval_dataset
+from utils import convert_adult_ds, eval_dataset
 
 import matplotlib.pyplot as plt
 import numpy as np
