@@ -145,3 +145,11 @@ def convert_cervical_ds(df):
                                           'Dx:Cancer', 'Dx:CIN', 'Dx:HPV', 'Dx', 'Hinselmann',
                                           'Citology', 'Schiller'])
     return df
+
+
+def convert_seizure_ds(df):
+    # df = df.drop('Unnamed', axis=1)
+    dic = {5: 0, 4: 0, 3: 0, 2: 0, 1: 1}
+    df['y'] = df['y'].map(dic)
+
+    return df
