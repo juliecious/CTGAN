@@ -351,8 +351,10 @@ class CTGANSynthesizer(BaseSynthesizer):
         i = 0
         self._G_losses = []
         self._D_losses = []
+        self._epsilons = []
         epsilon = 0
         steps = 0
+        epoch = 0
         print("\nStarting Training:\n")
 
         steps_per_epoch = max(len(train_data) // self._batch_size, 1)
@@ -470,16 +472,19 @@ class CTGANSynthesizer(BaseSynthesizer):
             # Save losses for plotting later
             self._G_losses.append(loss_g.item())
             self._D_losses.append(loss_d.item())
+            epoch += 1
 
             if self._private:
                 # calculate current privacy cost using the accountant
                 max_lmbd = 4095
                 lmbds = range(2, max_lmbd + 1)
                 rdp = compute_rdp(self._batch_size / len(train_data),
-                                  self._sigma,
-                                  steps,
-                                  lmbds)
+                                  self._sigma, steps, lmbds)
                 epsilon, _, _ = get_privacy_spent(lmbds, rdp, None, self._target_delta)
+                self._epsilons.append(epsilon)
+            else:
+                if epoch > self._epochs:
+                    epsilon = np.inf
 
             # Output training stats
             if self._verbose:
