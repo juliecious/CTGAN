@@ -11,7 +11,6 @@ from packaging import version
 from torch import optim
 from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional, utils
 
-import matplotlib
 import matplotlib.pyplot as plt
 
 from ctgan.data_sampler import DataSampler
@@ -368,26 +367,16 @@ class CTGANSynthesizer(BaseSynthesizer):
                 ###########################
                 for n in range(self._discriminator_steps):
                     if self._private:
-                        # clamp parameters into [-0.01, 0.01]
-                        for p in discriminator.parameters():
-                            p.data.clamp_(-0.01, 0.01)
-
-                        # weight clipping
-                        utils.clip_grad_norm_(discriminator.parameters(), self._clip_coeff)
-
-                        clipped_grads = {
-                            name: torch.zeros_like(param, dtype=torch.double) for name, param in
-                            discriminator.named_parameters()
-                        }
-
-                        # add noise
                         for name, param in discriminator.named_parameters():
                             if param.grad is not None:
-                                noise = torch.DoubleTensor(
-                                    clipped_grads[name].size()
-                                ).normal_(0, self._sigma * self._clip_coeff).to(self._device)
-                                clipped_grads[name] += param.grad + noise
-                                param.grad = clipped_grads[name].float()
+                                # clip gradient by the threshold C
+                                clipped_gradient = param.grad / max(1, torch.norm(param.grad, 2) / self._clip_coeff)
+                                # generate random noise from a Gaussian distribution
+                                noise = torch.DoubleTensor(param.size())\
+                                        .normal_(0, (self._sigma * self._clip_coeff)**2)\
+                                        .to(self._device)
+
+                                param.grad = (clipped_gradient + noise).float()
                         steps += 1
 
                     # train with fake
@@ -427,7 +416,7 @@ class CTGANSynthesizer(BaseSynthesizer):
                     pen = discriminator.calc_gradient_penalty(
                         real_cat, fake_cat, self._device, self.pac)
 
-                    loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
+                    loss_d = -(torch.mean(y_real) - torch.mean(y_fake))  # + pen
 
                     optimizerD.zero_grad()
                     pen.backward(retain_graph=True)
