@@ -5,6 +5,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, accuracy_score
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def eval_dataset(X, y, X_test, y_test):
@@ -153,3 +154,17 @@ def convert_seizure_ds(df):
     df['y'] = df['y'].map(dic)
 
     return df
+
+
+def plot_scores(trtr, tstr, save=False):
+    metrics = ['acc', 'f1 score', 'auroc', 'auprc']
+    plt.figure(figsize=(5, 5))
+    X = np.arange(4)
+    plt.title("TRTR v.s. TSTR")
+    plt.bar(X + 0.00, trtr, width=0.25)
+    plt.bar(X + 0.25, tstr, width=0.25)
+    plt.xticks(X + 0.25, metrics)
+    plt.legend(['TRTR', 'TSTR'])
+    if save:
+        plt.savefig('comparison.png')
+    plt.show()

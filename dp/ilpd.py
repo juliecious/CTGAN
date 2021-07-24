@@ -7,7 +7,7 @@ warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
-from ctgan import CTGANSynthesizer
+from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 from utils import eval_dataset
 
 import matplotlib.pyplot as plt
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     cols = data.columns
     discrete_columns = list(set(cols) - set(num_cols))
 
-    ctgan = CTGANSynthesizer(verbose=True,
+    ctgan = DPCTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
                              clip_coeff=0.15,

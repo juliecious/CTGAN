@@ -174,6 +174,7 @@ class CTGANSynthesizer(BaseSynthesizer):
         self._epochs = epochs
         self.pac = pac
 
+        # Differential Privacy
         self._private = private
         self._clip_coeff = clip_coeff
         self._sigma = sigma

@@ -3,9 +3,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 from sklearn.exceptions import ConvergenceWarning
 warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
-from ctgan import CTGANSynthesizer
 from utils import convert_seizure_ds, eval_dataset
 from sklearn.model_selection import train_test_split
+from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     data = pd.read_csv(url)
     data = data.drop('Unnamed', axis=1)
     target = 'y'
-    ctgan = CTGANSynthesizer(verbose=True,
+    ctgan = DPCTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
                              clip_coeff=0.15,

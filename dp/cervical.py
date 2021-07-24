@@ -3,7 +3,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 from sklearn.exceptions import ConvergenceWarning
 warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
-from ctgan import CTGANSynthesizer
+from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 from utils import convert_cervical_ds, eval_dataset
 from sklearn.model_selection import train_test_split
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     cols = data.columns
     discrete_columns = list(set(cols) - set(num_cols))
 
-    ctgan = CTGANSynthesizer(verbose=True,
+    ctgan = DPCTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
                              clip_coeff=0.3,
