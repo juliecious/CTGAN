@@ -1,45 +1,82 @@
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, accuracy_score
+from sklearn.metrics import roc_auc_score, average_precision_score, \
+    f1_score, accuracy_score, log_loss
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from xgboost import XGBClassifier
 
 
-def eval_dataset(X, y, X_test, y_test):
+def eval_dataset(X, y, X_test, y_test, multiclass=False):
     learners = [(AdaBoostClassifier(n_estimators=50)),
                 (DecisionTreeClassifier(max_depth=20)),
                 (LogisticRegression(max_iter=1000)),
-                (MLPClassifier(hidden_layer_sizes=(50,)))]
+                (MLPClassifier(hidden_layer_sizes=(50,))),
+                # (RandomForestClassifier(random_state=18)),
+                # (KNeighborsClassifier(n_neighbors=15)),
+                # (XGBClassifier(random_state=18)),
+                # (SVC())
+                ]
 
     history = dict()
-    avg_acc, avg_f1, avg_auroc, avg_auprc = 0, 0, 0, 0
+    avg_acc, avg_f1, avg_auroc, avg_auprc, avg_ll = 0, 0, 0, 0, 0
+
+    if multiclass:
+        learners.append((RandomForestClassifier()))
+        # print('Multiclass classification metrics:')
+    # else:
+    #     print('Binary classification metrics:')
 
     for i in range(len(learners)):
         model = learners[i]
         model.fit(X, y)
-        y_score = model.predict_proba(X_test)[:, 1]
         y_pred = model.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
-        auc_score = roc_auc_score(y_test, y_score)
-        auprc = average_precision_score(y_test, y_score)
 
         model_name = str(type(learners[i]).__name__)
-        history[model_name] = {'acc': acc, 'f1': f1, 'auroc': auc_score, 'auprc': auprc}
-        avg_acc += acc
-        avg_f1 += f1
-        avg_auroc += auc_score
-        avg_auprc += auprc
+
+        if multiclass:
+            y_score = model.predict_proba(X_test)
+            y_score = y_score.reshape(y_test.shape[0])
+            acc = accuracy_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred, average='weighted')
+            auc_score = roc_auc_score(y_test, y_score, average="weighted", multi_class="ovr")
+            ll = log_loss(y_test, y_score)
+            history[model_name] = {'acc': acc, 'f1': f1, 'auroc': auc_score, 'log loss': ll}
+            avg_acc += acc
+            avg_f1 += f1
+            avg_auroc += auc_score
+            avg_ll += ll
+
+        else:
+            y_score = model.predict_proba(X_test)[:, 1]
+            acc = accuracy_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred)
+            auc_score = roc_auc_score(y_test, y_score)
+            auprc = average_precision_score(y_test, y_score)
+
+            history[model_name] = {'acc': acc, 'f1': f1, 'auroc': auc_score, 'auprc': auprc}
+            avg_acc += acc
+            avg_f1 += f1
+            avg_auroc += auc_score
+            avg_auprc += auprc
 
     N = len(learners)
-    avg_acc, avg_f1, avg_auroc, avg_auprc = avg_acc/N, avg_f1/N, avg_auroc/N, avg_auprc/N
-    print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
-          f'auroc {round(avg_auroc, 4):>5}\t auprc {round(avg_auprc, 4):>5}')
+    avg_acc, avg_f1, avg_auroc, avg_auprc, avg_ll = avg_acc/N, avg_f1/N, avg_auroc/N, avg_auprc/N, avg_ll/N
 
-    return history, (avg_acc, avg_f1, avg_auroc, avg_auprc)
+    if multiclass:
+        print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
+              f'auroc {round(avg_auroc, 4):>5}\t log loss {round(avg_ll, 4):>5}')
+        return history, (avg_acc, avg_f1, avg_auroc, avg_ll)
+    else:
+        print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
+              f'auroc {round(avg_auroc, 4):>5}\t auprc {round(avg_auprc, 4):>5}')
+
+        return history, (avg_acc, avg_f1, avg_auroc, avg_auprc)
 
 
 def convert_adult_ds(dataset):

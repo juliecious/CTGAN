@@ -6,7 +6,6 @@ warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
-from ctgan import CTGANSynthesizer
 from utils import eval_dataset
 
 import matplotlib.pyplot as plt

@@ -6,7 +6,7 @@ warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 from ctgan import load_demo
 from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 from sklearn.model_selection import train_test_split
-from utils import convert_adult_ds, eval_dataset
+from utils import convert_adult_ds, eval_dataset, plot_scores
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -51,14 +51,4 @@ if __name__ == '__main__':
     print('\nTrain on fake, test on real')
     fake, tstr = eval_dataset(X_syn, y_syn, X_test, y_test)
 
-    # plot
-    metrics = ['acc', 'f1 score', 'auroc', 'auprc']
-    plt.figure(figsize=(5, 5))
-    X = np.arange(4)
-    plt.title("TRTR v.s. TSTR")
-    plt.bar(X + 0.00, trtr, width=0.25)
-    plt.bar(X + 0.25, tstr, width=0.25)
-    plt.xticks(X + 0.25, metrics)
-    plt.legend(['TRTR', 'TSTR'])
-    plt.savefig('comparison.png')
-    plt.show()
+    plot_scores(trtr, tstr)

@@ -1,26 +1,25 @@
 import warnings
-
 import pandas as pd
-
-warnings.simplefilter(action='ignore', category=FutureWarning)
+import numpy as np
 from sklearn.exceptions import ConvergenceWarning
-
-warnings.simplefilter(action='ignore', category=ConvergenceWarning)
-
-from ctgan import load_demo
 from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 from sklearn.model_selection import train_test_split
-from utils import convert_adult_ds, eval_dataset, plot_scores
+from utils import eval_dataset, plot_scores
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+
 
 from sklearn.datasets import fetch_covtype
-import matplotlib.pyplot as plt
-import numpy as np
+
+
+# https://archive.ics.uci.edu/ml/datasets/covertype
 
 if __name__ == '__main__':
-    raw_data = fetch_covtype()
-    data = np.concatenate((raw_data.data,
-                           raw_data.target.reshape((raw_data.target.shape[0], 1))),
-                          axis=1)
+    # raw_data = fetch_covtype()
+    # data = np.concatenate((raw_data.data,
+    #                        raw_data.target.reshape((raw_data.target.shape[0], 1))),
+    #                       axis=1)
     columns = [
         'Elevation',
         'Aspect',
@@ -77,17 +76,37 @@ if __name__ == '__main__':
         'Soil_Type39',
         'Soil_Type40',
         'Cover_Type']
-    # data = pd.read_csv('/Users/juliefang/PycharmProjects/CTGAN/examples/csv/covertype.csv')
+
     target = 'Cover_Type'
+    data = pd.read_csv('/Users/juliefang/PycharmProjects/CTGAN/examples/csv/covertype.csv')
     data = pd.DataFrame(data, columns=columns)
-    # X = data.drop([target], axis=1)
-    # y = data[target]
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-    #
+
     # data_train = np.concatenate((X_train,
     #                              y_train.values.reshape((y_train.values.shape[0], 1))),
     #                             axis=1)
 
-    ctgan = DPCTGANSynthesizer(verbose=True, private=True, epochs=1, target_epsilon=1)
+    ctgan = DPCTGANSynthesizer(verbose=True,
+                               private=True,
+                               clip_coeff=0.2,
+                               sigma=2,
+                               target_delta=1e-5,
+                               target_epsilon=1
+                               )
     ctgan.fit(data)
     ctgan.plot_losses(save=False)
+
+    X = data.drop([target], axis=1)[:100]
+    y = data[target][:100]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    print('\nTrain on real, test on real')
+    hist_real, trtr = eval_dataset(X_train, y_train, X_test, y_test, multiclass=True)
+
+    samples = ctgan.sample(len(data))  # Synthetic copy
+    _samples = samples
+    X_syn = _samples.drop([target], axis=1)
+    y_syn = _samples[target]
+    print('\nTrain on fake, test on real')
+    hist_fake, tstr = eval_dataset(X_syn, y_syn, X_test, y_test)
+
+    plot_scores(trtr, tstr)
