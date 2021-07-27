@@ -1,9 +1,15 @@
 from ctgan.synthesizers.ctgan import CTGANSynthesizer
 from ctgan.synthesizers.tvae import TVAESynthesizer
+from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
+from ctgan.synthesizers.adp_ctgan import ADPCTGANSynthesizer
+
 
 __all__ = (
     'CTGANSynthesizer',
-    'TVAESynthesizer'
+    'TVAESynthesizer',
+    'DPCTGANSynthesizer',
+    'ADPCTGANSynthesizer'
+
 )
 
 
