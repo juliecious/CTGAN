@@ -158,7 +158,7 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                         real_cat = torch.cat([real, c2], dim=1)
                     else:
                         real_cat = real
-                        fake_cat = fake
+                        fake_cat = fakeact
 
                     y_fake = discriminator(fake_cat)
                     y_real = discriminator(real_cat)

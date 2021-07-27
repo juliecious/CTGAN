@@ -20,6 +20,7 @@ install_requires = [
     'torchvision>=0.5.0,<1',
     'rdt>=0.5.0.dev1,<0.6',
     'matplotlib',
+    'xgboost'
 ]
 
 setup_requires = [
