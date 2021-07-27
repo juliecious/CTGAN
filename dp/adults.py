@@ -3,13 +3,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 from sklearn.exceptions import ConvergenceWarning
 warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
-from ctgan import load_demo
-from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
+from ctgan import load_demo, DPCTGANSynthesizer
 from sklearn.model_selection import train_test_split
 from utils import convert_adult_ds, eval_dataset, plot_scores
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 if __name__ == '__main__':
@@ -30,7 +26,7 @@ if __name__ == '__main__':
         'income'
     ]
 
-    ctgan = DPCTGANSynthesizer(verbose=True, private=True, target_epsilon=3)
+    ctgan = DPCTGANSynthesizer(verbose=True, private=True, target_epsilon=2)
     ctgan.fit(data, discrete_columns)
     ctgan.plot_losses(save=True)
 

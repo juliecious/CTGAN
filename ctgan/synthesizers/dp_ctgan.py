@@ -35,14 +35,14 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
 
     """
     def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
-                 generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4,
+                 generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4, betas=(0.5, 0.99),
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
                  log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
                  private=False, clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
         assert batch_size % 2 == 0
 
         super(DPCTGANSynthesizer, self).__init__(embedding_dim, generator_dim, discriminator_dim,
-                         generator_lr, generator_decay, discriminator_lr,
+                         generator_lr, generator_decay, discriminator_lr, betas,
                          discriminator_decay, batch_size, discriminator_steps,
                          log_frequency, verbose, epochs, pac, cuda)
 
@@ -84,13 +84,13 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
         ).to(self._device)
 
         optimizerG = optim.Adam(
-            self._generator.parameters(), lr=self._generator_lr, betas=(0.5, 0.9),
+            self._generator.parameters(), lr=self._generator_lr, betas=self._betas,
             weight_decay=self._generator_decay
         )
 
         optimizerD = optim.Adam(
             discriminator.parameters(), lr=self._discriminator_lr,
-            betas=(0.5, 0.9), weight_decay=self._discriminator_decay
+            betas=self._betas, weight_decay=self._discriminator_decay
         )
 
         mean = torch.zeros(self._batch_size, self._embedding_dim, device=self._device)
