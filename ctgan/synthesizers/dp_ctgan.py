@@ -39,7 +39,8 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
                  log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
                  private=False, clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
-        assert batch_size % 2 == 0
+
+        assert batch_size % 2 == 0 , f"Batch size: {batch_size}"
 
         super(DPCTGANSynthesizer, self).__init__(embedding_dim, generator_dim, discriminator_dim,
                          generator_lr, generator_decay, discriminator_lr, betas,
@@ -54,6 +55,14 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
         if self._private:
             print(f'Init CTGAN with differential privacy. '
                   f'Target epsilon: {self._target_epsilon}')
+
+
+    def get_config(self):
+        return f"Clip Coefficient: {self._clip_coeff}\n" \
+               f"Sigma: {self._sigma}\n" \
+               f"Target Epsilon: {self._target_epsilon}\n" \
+               f"Target delta: {self._target_delta}\n"
+
 
     def fit(self, train_data, discrete_columns=tuple()):
 
@@ -103,7 +112,6 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
         epsilon = 0
         steps = 0
         epoch = 0
-        print("\nStarting Training:\n")
 
         steps_per_epoch = max(len(train_data) // self._batch_size, 1)
 
@@ -116,6 +124,7 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                 ###########################
                 for n in range(self._discriminator_steps):
                     if self._private:
+
                         for name, param in discriminator.named_parameters():
                             if param.grad is not None:
                                 # clip gradient by the threshold C

@@ -23,8 +23,8 @@ if __name__ == '__main__':
     ctgan = DPCTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
-                             clip_coeff=0.3,
-                             sigma=4,
+                             clip_coeff=0.1,
+                             sigma=8,
                              target_epsilon=2,
                              target_delta=1e-5
                              )

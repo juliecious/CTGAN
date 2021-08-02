@@ -24,7 +24,7 @@ if __name__ == '__main__':
     ctgan = DPCTGANSynthesizer(verbose=True,
                              # epochs=10,
                              private=True,
-                             clip_coeff=0.15,
+                             clip_coeff=0.1,
                              sigma=4,
                              target_epsilon=7,
                              target_delta=1e-5
