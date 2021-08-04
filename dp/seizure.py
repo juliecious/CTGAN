@@ -5,7 +5,7 @@ warnings.simplefilter(action='ignore', category=ConvergenceWarning)
 
 from utils import convert_seizure_ds, eval_dataset
 from sklearn.model_selection import train_test_split
-from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
+from ctgan import CTGANSynthesizer, DPCTGANSynthesizer
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,16 +16,19 @@ if __name__ == '__main__':
     data = pd.read_csv(url)
     data = data.drop('Unnamed', axis=1)
     target = 'y'
-    ctgan = DPCTGANSynthesizer(verbose=True,
+
+    ctgan = CTGANSynthesizer(epochs=10)
+    ctgan.fit(data)
+
+    dpctgan = DPCTGANSynthesizer(verbose=True,
                              # epochs=10,
-                             private=True,
                              clip_coeff=0.15,
                              # sigma=6,
-                             target_epsilon=5,
+                             target_epsilon=4.7,
                              target_delta=1e-5
                              )
-    ctgan.fit(data)
-    ctgan.plot_losses(save=True)
+    dpctgan.fit(data)
+    dpctgan.plot_losses()
 
     # evaluate performance using real data
     data = convert_seizure_ds(data)
@@ -37,24 +40,36 @@ if __name__ == '__main__':
     real, trtr = eval_dataset(X_train, y_train, X_test, y_test)
 
     # evaluate performance using fake data
+    # CTGAN
     samples = ctgan.sample(len(data))  # Synthetic copy
     _samples = convert_seizure_ds(samples)
     _samples.dropna(how='any', inplace=True)
-
     X_syn = _samples.drop([target], axis=1)
     y_syn = _samples[target]
-    print('\nTrain on fake, test on real')
-    fake, tstr = eval_dataset(X_syn, y_syn, X_test, y_test)
+    print('\nCTGAN: Train on fake, test on real')
+    fake_ctgan, tstr_ctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
+
+    # DPCTGAN
+    samples = dpctgan.sample(len(data))  # Synthetic copy
+    _samples = convert_seizure_ds(samples)
+    _samples.dropna(how='any', inplace=True)
+    X_syn = _samples.drop([target], axis=1)
+    y_syn = _samples[target]
+    print('\nDPCTGAN: Train on fake, test on real')
+    fake_dpctgan, tstr_dpctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
 
     # plot
-    metrics = ['acc', 'f1 score', 'auroc', 'auprc']
-    plt.figure(figsize=(5, 5))
-    X = np.arange(4)
-    plt.title("TRTR v.s. TSTR")
-    plt.bar(X + 0.00, trtr, width=0.25)
-    plt.bar(X + 0.25, tstr, width=0.25)
-    plt.xticks(X + 0.25, metrics)
-    plt.legend(['TRTR', 'TSTR'])
-    plt.savefig('comparison.png')
-    plt.show()
+    import matplotlib.pyplot as plt
+    import numpy as np
 
+    metrics = ['acc', 'f1 score', 'auroc', 'auprc']
+    plt.figure(figsize=(10, 5))
+    X = np.arange(4)
+    plt.title("Adult Dataset")
+    plt.bar(X + 0.00, trtr, width=0.25, color='#8FB9AA')
+    plt.bar(X + 0.25, tstr_ctgan, width=0.25, color='#F2D096')
+    plt.bar(X + 0.50, tstr_dpctgan, width=0.25, color='#ED8975')
+    plt.xticks(X + 0.25, metrics)
+    plt.legend(['Real', 'CTGAN', 'DP-CTGAN'], bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.show()

@@ -27,10 +27,10 @@ class ADPCTGANSynthesizer(CTGANSynthesizer):
     def __init__(self, embedding_dim=128, generator_dim=(256, 256), discriminator_dim=(256, 256),
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4, betas=(0.5, 0.99),
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
-                 log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
+                 log_frequency=True, verbose=False, epochs=3, pac=10, cuda=True,
                  clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5, k=3):
 
-        super(CTGANSynthesizer, self).__init__(embedding_dim, generator_dim, discriminator_dim,
+        super(ADPCTGANSynthesizer, self).__init__(embedding_dim, generator_dim, discriminator_dim,
                          generator_lr, generator_decay, discriminator_lr, betas,
                          discriminator_decay, batch_size, discriminator_steps,
                          log_frequency, verbose, epochs, pac, cuda)
@@ -105,10 +105,63 @@ class ADPCTGANSynthesizer(CTGANSynthesizer):
         steps = 0
         epoch = 0
 
-        steps_per_epoch = max(len(train_data) // self._batch_size, 1)
+        steps_per_epoch = max(len(d2) // self._batch_size, 1)
 
-        while epsilon < self._target_epsilon:
-            for id_ in range(steps_per_epoch):
-                for n in range(self._discriminator_steps):
-                    pass
+        # while epsilon < self._target_epsilon:
+        for id_ in range(steps_per_epoch):
+            for n in range(self._discriminator_steps):
+                g = self.improved_wgan_gradient(d2, 10, discriminator, optimizerD)
 
+                break
+            break
+
+    def improved_wgan_gradient(self, data, m, discriminator, optimizerD):
+        mean = torch.zeros(self._batch_size, self._embedding_dim, device=self._device)
+        std = mean + 1
+
+        for i in range(m):
+            fakez = torch.normal(mean=mean, std=std)
+            condvec = self._data_sampler.sample_condvec(self._batch_size)
+
+            if condvec is None:
+                c1, m1, col, opt = None, None, None, None
+                real = self._data_sampler.sample_data(self._batch_size, col, opt)
+            else:
+                c1, m1, col, opt = condvec
+                c1 = torch.from_numpy(c1).to(self._device)
+                m1 = torch.from_numpy(m1).to(self._device)
+                fakez = torch.cat([fakez, c1], dim=1)
+
+                perm = np.arange(self._batch_size)
+                np.random.shuffle(perm)
+                real = self._data_sampler.sample_data(
+                    self._batch_size, col[perm], opt[perm])
+                c2 = c1[perm]
+
+            fake = self._generator(fakez)
+            fakeact = self._apply_activate(fake)
+
+            real = torch.from_numpy(real.astype('float32')).to(self._device)
+
+            if c1 is not None:
+                fake_cat = torch.cat([fakeact, c1], dim=1)
+                real_cat = torch.cat([real, c2], dim=1)
+            else:
+                real_cat = real
+                fake_cat = fakeact
+
+            y_fake = discriminator(fake_cat)
+            y_real = discriminator(real_cat)
+
+            pen = discriminator.calc_gradient_penalty(
+                real_cat, fake_cat, self._device, self.pac)
+            loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
+
+            optimizerD.zero_grad()
+            pen.backward(retain_graph=True)
+            loss_d.backward()
+            optimizerD.step()
+
+        for p in discriminator.parameters():
+            print(p)
+        return discriminator.parameters()

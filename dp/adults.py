@@ -29,7 +29,7 @@ if __name__ == '__main__':
     ctgan = CTGANSynthesizer(epochs=10)
     ctgan.fit(data, discrete_columns)
 
-    dpctgan = DPCTGANSynthesizer(verbose=True, private=True, target_epsilon=3)
+    dpctgan = DPCTGANSynthesizer(verbose=True, target_epsilon=3)
     print(dpctgan.get_config())
     dpctgan.fit(data, discrete_columns)
     dpctgan.plot_losses()
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     import numpy as np
 
     metrics = ['acc', 'f1 score', 'auroc', 'auprc']
-    plt.figure()
+    plt.figure(figsize=(10, 5))
     X = np.arange(4)
     plt.title("Adult Dataset")
     plt.bar(X + 0.00, trtr, width=0.25, color='#8FB9AA')

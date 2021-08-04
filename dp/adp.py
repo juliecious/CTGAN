@@ -26,7 +26,7 @@ if __name__ == '__main__':
         'income'
     ]
 
-    ctgan = ADPCTGANSynthesizer(verbose=True, private=True, target_epsilon=3, batch_size=500)
+    ctgan = ADPCTGANSynthesizer(verbose=True, target_epsilon=3)
     ctgan.fit(data, discrete_columns)
 
     # # evaluate performance using real data

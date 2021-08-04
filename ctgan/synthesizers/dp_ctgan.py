@@ -38,7 +38,7 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                  generator_lr=2e-4, generator_decay=1e-6, discriminator_lr=2e-4, betas=(0.5, 0.99),
                  discriminator_decay=1e-6, batch_size=500, discriminator_steps=1,
                  log_frequency=True, verbose=False, epochs=300, pac=10, cuda=True,
-                 private=False, clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
+                 clip_coeff=0.1, sigma=1, target_epsilon=3, target_delta=1e-5):
 
         assert batch_size % 2 == 0 , f"Batch size: {batch_size}"
 
@@ -47,14 +47,12 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                          discriminator_decay, batch_size, discriminator_steps,
                          log_frequency, verbose, epochs, pac, cuda)
 
-        self._private = private
         self._clip_coeff = clip_coeff
         self._sigma = sigma
         self._target_epsilon = target_epsilon
         self._target_delta = target_delta
-        if self._private:
-            print(f'Init CTGAN with differential privacy. '
-                  f'Target epsilon: {self._target_epsilon}')
+
+        print(f'Init CTGAN with differential privacy.  Target epsilon: {self._target_epsilon}')
 
 
     def get_config(self):
@@ -123,20 +121,19 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                 # (1) Update D network
                 ###########################
                 for n in range(self._discriminator_steps):
-                    if self._private:
 
-                        for name, param in discriminator.named_parameters():
-                            if param.grad is not None:
-                                # clip gradient by the threshold C
-                                clipped_gradient = param.grad / max(1, torch.norm(param.grad,
-                                                                                  2) / self._clip_coeff)
-                                # generate random noise from a Gaussian distribution
-                                noise = torch.DoubleTensor(param.size()) \
-                                    .normal_(0, (self._sigma * self._clip_coeff) ** 2) \
-                                    .to(self._device)
+                    for name, param in discriminator.named_parameters():
+                        if param.grad is not None:
+                            # clip gradient by the threshold C
+                            clipped_gradient = param.grad / max(1, torch.norm(param.grad,
+                                                                              2) / self._clip_coeff)
+                            # generate random noise from a Gaussian distribution
+                            noise = torch.DoubleTensor(param.size()) \
+                                .normal_(0, (self._sigma * self._clip_coeff) ** 2) \
+                                .to(self._device)
 
-                                param.grad = (clipped_gradient + noise).float()
-                        steps += 1
+                            param.grad = (clipped_gradient + noise).float()
+                    steps += 1
 
                     # train with fake
                     fakez = torch.normal(mean=mean, std=std)
@@ -222,17 +219,13 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
             self._D_losses.append(loss_d.item())
             epoch += 1
 
-            if self._private:
-                # calculate current privacy cost using the accountant
-                max_lmbd = 4095
-                lmbds = range(2, max_lmbd + 1)
-                rdp = compute_rdp(self._batch_size / len(train_data),
-                                  self._sigma, steps, lmbds)
-                epsilon, _, _ = get_privacy_spent(lmbds, rdp, None, self._target_delta)
-                self._epsilons.append(epsilon)
-            else:
-                if epoch > self._epochs:
-                    epsilon = np.inf
+            # calculate current privacy cost using the accountant
+            max_lmbd = 4095
+            lmbds = range(2, max_lmbd + 1)
+            rdp = compute_rdp(self._batch_size / len(train_data),
+                              self._sigma, steps, lmbds)
+            epsilon, _, _ = get_privacy_spent(lmbds, rdp, None, self._target_delta)
+            self._epsilons.append(epsilon)
 
             # Output training stats
             if self._verbose:
