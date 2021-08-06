@@ -85,6 +85,7 @@ if __name__ == '__main__':
     samples = map_gender(samples)
     X_syn = samples.drop([target], axis=1)
     y_syn = samples[target]
+    y_syn = y_syn.replace(-1, 0)
     print('\nDPCTGAN: Train on fake, test on real')
     fake_dpctgan, tstr_dpctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
 
@@ -95,7 +96,7 @@ if __name__ == '__main__':
     metrics = ['acc', 'f1 score', 'auroc', 'auprc']
     plt.figure(figsize=(10, 5))
     X = np.arange(4)
-    plt.title("Adult Dataset")
+    plt.title("ilpd Dataset")
     plt.bar(X + 0.00, trtr, width=0.25, color='#8FB9AA')
     plt.bar(X + 0.25, tstr_ctgan, width=0.25, color='#F2D096')
     plt.bar(X + 0.50, tstr_dpctgan, width=0.25, color='#ED8975')
