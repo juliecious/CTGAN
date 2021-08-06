@@ -65,7 +65,7 @@ if __name__ == '__main__':
     metrics = ['acc', 'f1 score', 'auroc', 'auprc']
     plt.figure(figsize=(10, 5))
     X = np.arange(4)
-    plt.title("Adult Dataset")
+    plt.title("Seizure Dataset")
     plt.bar(X + 0.00, trtr, width=0.25, color='#8FB9AA')
     plt.bar(X + 0.25, tstr_ctgan, width=0.25, color='#F2D096')
     plt.bar(X + 0.50, tstr_dpctgan, width=0.25, color='#ED8975')
