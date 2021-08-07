@@ -41,7 +41,7 @@ def eval_dataset(X, y, X_test, y_test, multiclass=False):
 
         if multiclass:
             y_score = model.predict_proba(X_test)
-            y_score = y_score.reshape(y_test.shape[0])
+            # y_score = y_score.reshape(y_test.shape[0])
             acc = accuracy_score(y_test, y_pred)
             f1 = f1_score(y_test, y_pred, average='weighted')
             auc_score = roc_auc_score(y_test, y_score, average="weighted", multi_class="ovr")
