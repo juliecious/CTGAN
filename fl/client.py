@@ -151,18 +151,18 @@ class CTGANClient(fl.client.NumPyClient):
 
     def get_parameters(self):
         """ Return model parameters as a list of NumPy ndarrays """
-        return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
+        return [val.cpu().numpy() for _, val in self.model._generator.state_dict().items()]
 
     def set_parameters(self, params):
-        """ Set model parameters from a list of NumPy ndarrays """
-        params_dict = zip(self.model.state_dict().keys, params)
+        """ Set generator parameters from a list of NumPy ndarrays """
+        params_dict = zip(self.model._generator.state_dict().keys, params)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        self.model.load_state_dict(state_dict, strict=True)
+        self.model._generator.load_state_dict(state_dict, strict=True)
 
     def fit(self, params, config):
         self.set_parameters(params)
         ctgan.fit(self.train_data, self.discrete_columns)
-        return self.get_parameters(), len(self.train_data)
+        return self._generator.get_parameters(), len(self.train_data)
 
     def evaluate(self, params, config):
         self.set_parameters(params)
