@@ -147,9 +147,10 @@ class CTGANClient(fl.client.NumPyClient):
         y = _data[target]
         _, self.X_test, _, self.y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-
     def get_parameters(self):
         """ Return model parameters as a list of NumPy ndarrays """
+        self.model.fit(self.train_data, self.discrete_columns)
+        print(self.model._generator is None)
         return [val.cpu().numpy() for _, val in self.model._generator.state_dict().items()]
 
     def set_parameters(self, params):
