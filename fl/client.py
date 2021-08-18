@@ -1,7 +1,4 @@
 from collections import OrderedDict
-from typing import Dict, List, Tuple
-
-import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
 
@@ -9,11 +6,10 @@ import ctgan
 import flwr as fl
 
 from ctgan import CTGANSynthesizer, load_demo
-from dp.utils import convert_adult_ds, eval_dataset
+from utils import convert_adult_ds, eval_dataset
 
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class CTGANClient(fl.client.NumpyClient):
+class CTGANClient(fl.client.NumPyClient):
     """ Flower client implementing CTGAN data generation using PyTorch """
 
     def __init__(self, model, data, discrete_columns, target):
@@ -57,8 +53,7 @@ class CTGANClient(fl.client.NumpyClient):
 def main():
     """ load data, start CTGANClient """
 
-    model = CTGANSynthesizer(epochs=10)
-    model.to(DEVICE)
+    model = CTGANSynthesizer(epochs=10, cuda=torch.cuda.is_available())
 
     data = load_demo()
     discrete_columns = [
