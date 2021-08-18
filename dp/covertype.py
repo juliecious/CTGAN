@@ -16,10 +16,10 @@ from sklearn.datasets import fetch_covtype
 # https://archive.ics.uci.edu/ml/datasets/covertype
 
 if __name__ == '__main__':
-    # raw_data = fetch_covtype()
-    # data = np.concatenate((raw_data.data,
-    #                        raw_data.target.reshape((raw_data.target.shape[0], 1))),
-    #                       axis=1)
+    raw_data = fetch_covtype()
+    data = np.concatenate((raw_data.data,
+                           raw_data.target.reshape((raw_data.target.shape[0], 1))),
+                          axis=1)
     columns = [
         'Elevation',
         'Aspect',
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         'Cover_Type']
 
     target = 'Cover_Type'
-    data = pd.read_csv('/Users/juliefang/PycharmProjects/CTGAN/examples/csv/covertype.csv')
+    # data = pd.read_csv('/Users/juliefang/PycharmProjects/CTGAN/examples/csv/covertype.csv')
     data = pd.DataFrame(data, columns=columns)
 
     # data_train = np.concatenate((X_train,
