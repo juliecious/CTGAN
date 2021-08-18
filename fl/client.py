@@ -149,23 +149,23 @@ class CTGANClient(fl.client.NumPyClient):
         _, self.X_test, _, self.y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
 
-    def get_params(self):
+    def get_parameters(self):
         """ Return model parameters as a list of NumPy ndarrays """
         return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
 
-    def set_params(self, params):
+    def set_parameters(self, params):
         """ Set model parameters from a list of NumPy ndarrays """
         params_dict = zip(self.model.state_dict().keys, params)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         self.model.load_state_dict(state_dict, strict=True)
 
     def fit(self, params, config):
-        self.set_params(params)
+        self.set_parameters(params)
         ctgan.fit(self.train_data, self.discrete_columns)
-        return self.get_params(), len(self.train_data)
+        return self.get_parameters(), len(self.train_data)
 
     def evaluate(self, params, config):
-        self.set_params(params)
+        self.set_parameters(params)
         self.test_data = self.model.sample(len(self.train_data))
 
         _samples = convert_adult_ds(self.test_data)
