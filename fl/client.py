@@ -192,7 +192,7 @@ def main():
         'native-country',
         'income'
     ]
-    client = CTGANClient(model, data, discrete_columns)
+    client = CTGANClient(model, data, discrete_columns, 'income')
     fl.client.start_numpy_client("0.0.0.0:8080", client)
 
 if __name__ == "__main__":
