@@ -155,7 +155,7 @@ class CTGANClient(fl.client.NumPyClient):
 
     def set_parameters(self, params):
         """ Set generator parameters from a list of NumPy ndarrays """
-        params_dict = zip(self.model._generator.state_dict().keys, params)
+        params_dict = zip(self.model._generator.state_dict().keys(), params)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         self.model._generator.load_state_dict(state_dict, strict=True)
 
