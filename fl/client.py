@@ -81,7 +81,6 @@ def eval_dataset(X, y, X_test, y_test, multiclass=False):
 
         return history, (avg_acc, avg_f1, avg_auroc, avg_auprc)
 
-
 def convert_adult_ds(dataset):
     df = dataset.copy()
     salary_map = {' <=50K': 1, ' >50K': 0}
@@ -161,7 +160,7 @@ class CTGANClient(fl.client.NumPyClient):
 
     def fit(self, params, config):
         self.set_parameters(params)
-        ctgan.fit(self.train_data, self.discrete_columns)
+        self.model.fit(self.train_data, self.discrete_columns)
         return self._generator.get_parameters(), len(self.train_data)
 
     def evaluate(self, params, config):
@@ -179,7 +178,6 @@ def main():
     """ load data, start CTGANClient """
 
     model = CTGANSynthesizer(epochs=10, cuda=torch.cuda.is_available())
-
     data = load_demo()
     discrete_columns = [
         'workclass',
