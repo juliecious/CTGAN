@@ -74,12 +74,12 @@ def eval_dataset(X, y, X_test, y_test, multiclass=False):
     if multiclass:
         print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
               f'auroc {round(avg_auroc, 4):>5}\t log loss {round(avg_ll, 4):>5}')
-        return history, (avg_acc, avg_f1, avg_auroc, avg_ll)
+        return avg_acc, avg_f1, avg_auroc, avg_ll
     else:
         print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
               f'auroc {round(avg_auroc, 4):>5}\t auprc {round(avg_auprc, 4):>5}')
 
-        return history, (avg_acc, avg_f1, avg_auroc, avg_auprc)
+        return avg_acc, avg_f1, avg_auroc, avg_auprc
 
 def convert_adult_ds(dataset):
     df = dataset.copy()
@@ -151,33 +151,35 @@ class CTGANClient(fl.client.NumPyClient):
         """ Return model parameters as a list of NumPy ndarrays """
         self.model.fit(self.train_data, self.discrete_columns)
         print(self.model._generator is None)
-        return [val.cpu().numpy() for _, val in self.model._generator.state_dict().items()]
+        return [val.cpu().numpy() for name, val in self.model._generator.state_dict().items()
+                if 'bn' not in name]
 
-    def set_parameters(self, params):
+    def set_parameters(self, parameters):
         """ Set generator parameters from a list of NumPy ndarrays """
-        params_dict = zip(self.model._generator.state_dict().keys(), params)
+        self.model.train(self.train_data, self.discrete_columns)
+        keys = [k for k in self.model.state_dict().keys() if 'bn' not in k]
+        params_dict = zip(keys, parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        self.model._generator.load_state_dict(state_dict, strict=True)
+        self.model._generator.load_state_dict(state_dict, strict=False)
 
-    def fit(self, params, config):
-        self.set_parameters(params)
+    def fit(self, parameters, config):
+        self.set_parameters(parameters)
         self.model.fit(self.train_data, self.discrete_columns)
-        return self._generator.get_parameters(), len(self.train_data)
+        return self.get_parameters(), len(self.train_data), {}
 
-    def evaluate(self, params, config):
-        self.set_parameters(params)
+    def evaluate(self, parameters, config):
+        self.set_parameters(parameters)
         self.test_data = self.model.sample(len(self.train_data))
 
         _samples = convert_adult_ds(self.test_data)
         X_syn = _samples.drop([self.target], axis=1)
         y_syn = _samples[self.target]
 
-        eval_dataset(X_syn, y_syn, self.X_test, self.y_test)
-
+        avg_acc, avg_f1, avg_auroc, avg_auprc = eval_dataset(X_syn, y_syn, self.X_test, self.y_test)
+        return float(avg_acc), len(self.test_data), {"accuracy": avg_acc}
 
 def main():
     """ load data, start CTGANClient """
-
     model = CTGANSynthesizer(epochs=10, cuda=torch.cuda.is_available())
     data = load_demo()
     discrete_columns = [
@@ -191,7 +193,8 @@ def main():
         'native-country',
         'income'
     ]
-    client = CTGANClient(model, data, discrete_columns, 'income')
+    target = 'income'
+    client = CTGANClient(model, data, discrete_columns, target)
     fl.client.start_numpy_client("0.0.0.0:8080", client)
 
 if __name__ == "__main__":
