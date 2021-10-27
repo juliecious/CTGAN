@@ -17,6 +17,5 @@ __all__ = (
     'CTGANSynthesizer',
     'TVAESynthesizer',
     'DPCTGANSynthesizer',
-    'ADPCTGANSynthesizer',
     'load_demo'
 )

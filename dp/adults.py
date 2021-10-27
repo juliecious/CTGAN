@@ -1,10 +1,12 @@
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-from sklearn.exceptions import ConvergenceWarning
-warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+# import sys
+# sys.path.append('.')
 
-from ctgan import load_demo, CTGANSynthesizer, DPCTGANSynthesizer, ADPCTGANSynthesizer, \
-    TVAESynthesizer
+import warnings
+# warnings.simplefilter(action='ignore', category=FutureWarning)
+# from sklearn.exceptions import ConvergenceWarning
+# warnings.simplefilter(action='ignore', category=ConvergenceWarning)
+
+from ctgan import load_demo, CTGANSynthesizer, DPCTGANSynthesizer
 from sklearn.model_selection import train_test_split
 from utils import convert_adult_ds, eval_dataset, plot_scores
 
@@ -27,13 +29,13 @@ if __name__ == '__main__':
         'income'
     ]
 
-    # ctgan = CTGANSynthesizer(cuda=False)
-    # ctgan.fit(data, discrete_columns)
+    ctgan = CTGANSynthesizer(epochs=3, cuda=False, verbose=True)
+    ctgan.fit(data, discrete_columns)
 
-    dpctgan = DPCTGANSynthesizer(verbose=True, sigma=8, target_epsilon=1)
-    print(dpctgan.get_config())
-    dpctgan.fit(data, discrete_columns)
-    dpctgan.plot_losses()
+    # dpctgan = DPCTGANSynthesizer(verbose=True, epochs=3, sigma=8, target_epsilon=1)
+    # print(dpctgan.get_config())
+    # dpctgan.fit(data, discrete_columns)
+    # dpctgan.plot_losses()
 
 
     # # evaluate performance using real data
@@ -46,18 +48,18 @@ if __name__ == '__main__':
     real, trtr = eval_dataset(X_train, y_train, X_test, y_test)
 
     # # CTGAN
-    # samples = ctgan.sample(len(data)) # Synthetic copy
-    # _samples = convert_adult_ds(samples)
-    # X_syn = _samples.drop([target], axis=1)
-    # y_syn = _samples[target]
-    # print('\nCTGAN: Train on fake, test on real')
-    # fake_ctgan, tstr_ctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
-
-    # DPCTGAN
-    samples = dpctgan.sample(len(data))  # Synthetic copy
+    samples = ctgan.sample(len(data)) # Synthetic copy
     _samples = convert_adult_ds(samples)
     X_syn = _samples.drop([target], axis=1)
     y_syn = _samples[target]
-    print('\nDPCTGAN: Train on fake, test on real')
-    fake_dpctgan, tstr_dpctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
+    print('\nCTGAN: Train on fake, test on real')
+    fake_ctgan, tstr_ctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
+
+    # DPCTGAN
+    # samples = dpctgan.sample(len(data))  # Synthetic copy
+    # _samples = convert_adult_ds(samples)
+    # X_syn = _samples.drop([target], axis=1)
+    # y_syn = _samples[target]
+    # print('\nDPCTGAN: Train on fake, test on real')
+    # fake_dpctgan, tstr_dpctgan = eval_dataset(X_syn, y_syn, X_test, y_test)
 

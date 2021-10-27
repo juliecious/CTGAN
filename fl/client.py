@@ -2,38 +2,27 @@ from collections import OrderedDict
 import torch
 from sklearn.model_selection import train_test_split
 
-import ctgan
 import flwr as fl
 
-from ctgan import CTGANSynthesizer, load_demo
+from ctgan.synthesizers.ctgan import CTGANSynthesizer
+from ctgan.demo import load_demo
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import roc_auc_score, average_precision_score, \
-    f1_score, accuracy_score, log_loss
+    f1_score, accuracy_score
 import numpy as np
 
 
-def eval_dataset(X, y, X_test, y_test, multiclass=False):
+def eval_dataset(X, y, X_test, y_test):
     learners = [(AdaBoostClassifier(n_estimators=50)),
                 (DecisionTreeClassifier(max_depth=20)),
                 (LogisticRegression(max_iter=1000)),
-                (MLPClassifier(hidden_layer_sizes=(50,))),
-                # (RandomForestClassifier(random_state=18)),
-                # (KNeighborsClassifier(n_neighbors=15)),
-                # (XGBClassifier(random_state=18)),
-                # (SVC())
-                ]
+                (MLPClassifier(hidden_layer_sizes=(50,)))]
 
     history = dict()
     avg_acc, avg_f1, avg_auroc, avg_auprc, avg_ll = 0, 0, 0, 0, 0
-
-    if multiclass:
-        learners.append((RandomForestClassifier()))
-        # print('Multiclass classification metrics:')
-    # else:
-    #     print('Binary classification metrics:')
 
     for i in range(len(learners)):
         model = learners[i]
@@ -42,44 +31,26 @@ def eval_dataset(X, y, X_test, y_test, multiclass=False):
 
         model_name = str(type(learners[i]).__name__)
 
-        if multiclass:
-            y_score = model.predict_proba(X_test)
-            # y_score = y_score.reshape(y_test.shape[0])
-            acc = accuracy_score(y_test, y_pred)
-            f1 = f1_score(y_test, y_pred, average='weighted')
-            auc_score = roc_auc_score(y_test, y_score, average="weighted", multi_class="ovr")
-            ll = log_loss(y_test, y_score)
-            history[model_name] = {'acc': acc, 'f1': f1, 'auroc': auc_score, 'log loss': ll}
-            avg_acc += acc
-            avg_f1 += f1
-            avg_auroc += auc_score
-            avg_ll += ll
+        y_score = model.predict_proba(X_test)[:, 1]
+        acc = accuracy_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+        auc_score = roc_auc_score(y_test, y_score)
+        auprc = average_precision_score(y_test, y_score)
 
-        else:
-            y_score = model.predict_proba(X_test)[:, 1]
-            acc = accuracy_score(y_test, y_pred)
-            f1 = f1_score(y_test, y_pred)
-            auc_score = roc_auc_score(y_test, y_score)
-            auprc = average_precision_score(y_test, y_score)
-
-            history[model_name] = {'acc': acc, 'f1': f1, 'auroc': auc_score, 'auprc': auprc}
-            avg_acc += acc
-            avg_f1 += f1
-            avg_auroc += auc_score
-            avg_auprc += auprc
+        history[model_name] = {'acc': acc, 'f1': f1, 'auroc': auc_score, 'auprc': auprc}
+        avg_acc += acc
+        avg_f1 += f1
+        avg_auroc += auc_score
+        avg_auprc += auprc
 
     N = len(learners)
-    avg_acc, avg_f1, avg_auroc, avg_auprc, avg_ll = avg_acc/N, avg_f1/N, avg_auroc/N, avg_auprc/N, avg_ll/N
+    avg_acc, avg_f1, avg_auroc, avg_auprc, avg_ll = avg_acc / N, avg_f1 / N, avg_auroc / N, avg_auprc / N, avg_ll / N
 
-    if multiclass:
-        print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
-              f'auroc {round(avg_auroc, 4):>5}\t log loss {round(avg_ll, 4):>5}')
-        return avg_acc, avg_f1, avg_auroc, avg_ll
-    else:
-        print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
-              f'auroc {round(avg_auroc, 4):>5}\t auprc {round(avg_auprc, 4):>5}')
+    print(f'Average: acc {round(avg_acc, 4):>5}\t f1 score {round(avg_f1, 4):>5}\t '
+          f'auroc {round(avg_auroc, 4):>5}\t auprc {round(avg_auprc, 4):>5}')
 
-        return avg_acc, avg_f1, avg_auroc, avg_auprc
+    return avg_acc, avg_f1, avg_auroc, avg_auprc
+
 
 def convert_adult_ds(dataset):
     df = dataset.copy()
@@ -133,6 +104,7 @@ def convert_adult_ds(dataset):
     df.drop(['fnlwgt'], axis=1, inplace=True)
     return df
 
+
 class CTGANClient(fl.client.NumPyClient):
     """ Flower client implementing CTGAN data generation using PyTorch """
 
@@ -175,12 +147,13 @@ class CTGANClient(fl.client.NumPyClient):
         X_syn = _samples.drop([self.target], axis=1)
         y_syn = _samples[self.target]
 
-        avg_acc, avg_f1, avg_auroc, avg_auprc = eval_dataset(X_syn, y_syn, self.X_test, self.y_test)
+        avg_acc, avg_f1, avg_auroc, avg_auprc = eval_dataset(X_syn, y_syn, self.X_test,
+                                                             self.y_test)
         return float(avg_acc), len(self.test_data), {"accuracy": avg_acc}
+
 
 def main():
     """ load data, start CTGANClient """
-    model = CTGANSynthesizer(epochs=10, cuda=torch.cuda.is_available())
     data = load_demo()
     discrete_columns = [
         'workclass',
@@ -194,8 +167,10 @@ def main():
         'income'
     ]
     target = 'income'
+    model = CTGANSynthesizer(epochs=3, cuda=torch.cuda.is_available())
     client = CTGANClient(model, data, discrete_columns, target)
-    fl.client.start_numpy_client("0.0.0.0:8080", client)
+    fl.client.start_numpy_client("[::]:8080", client)
+
 
 if __name__ == "__main__":
     main()
