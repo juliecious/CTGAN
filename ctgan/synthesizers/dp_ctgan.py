@@ -1,3 +1,5 @@
+import datetime
+import os
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 from sklearn.exceptions import ConvergenceWarning
@@ -235,11 +237,11 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
                       f"Epsilon: {epsilon:.4f}", flush=True)
                 i += 1
 
-    def plot_losses(self, save=False):
+    def plot_losses(self, save=False, dir=os.getcwd()):
         plt.figure(figsize=(10, 5))
-        plt.title("Generator and Discriminator Loss during training")
-        plt.plot(self._G_losses, label='G')
-        plt.plot(self._D_losses, label='D')
+        plt.title("Training Losses")
+        plt.plot(self._G_losses, label='Generator')
+        plt.plot(self._D_losses, label='Discriminator')
         plt.xlabel('iterations')
         plt.ylabel('Loss')
         intervals = len(self._G_losses) // 5 if len(self._G_losses) > 5 else len(self._G_losses)
@@ -247,7 +249,8 @@ class DPCTGANSynthesizer(CTGANSynthesizer):
         plt.xticks(x_ticks)
         plt.legend()
         if save:
-            plt.savefig('losses.png')
+            timestamp = datetime.datetime.now().strftime('%m-%d_%H-%M-%S')
+            plt.savefig(os.path.join(dir, f'client_{timestamp}.png'))
         plt.show()
 
 

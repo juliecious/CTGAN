@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import torch
+
 from packaging import version
 from torch import optim
 from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequential, functional
@@ -10,6 +11,10 @@ from torch.nn import BatchNorm1d, Dropout, LeakyReLU, Linear, Module, ReLU, Sequ
 from ctgan.data_sampler import DataSampler
 from ctgan.data_transformer import DataTransformer
 from ctgan.synthesizers.base import BaseSynthesizer
+
+from matplotlib import pyplot as plt
+import os
+import datetime
 
 
 class Discriminator(Module):
@@ -271,7 +276,7 @@ class CTGANSynthesizer(BaseSynthesizer):
         if invalid_columns:
             raise ValueError('Invalid columns found: {}'.format(invalid_columns))
 
-    def fit(self, train_data, discrete_columns=tuple(), epochs=None):
+    def fit(self, train_data, discrete_columns=tuple(), epochs=None, plot=False, plot_dir=None):
         """Fit the CTGAN Synthesizer models to the training data.
 
         Args:
@@ -284,6 +289,9 @@ class CTGANSynthesizer(BaseSynthesizer):
                 a ``pandas.DataFrame``, this list should contain the column names.
         """
         self._validate_discrete_columns(train_data, discrete_columns)
+
+        if plot:
+            losses = {'g': [], 'd': []}
 
         if epochs is None:
             epochs = self._epochs
@@ -408,10 +416,30 @@ class CTGANSynthesizer(BaseSynthesizer):
                 loss_g.backward()
                 optimizerG.step()
 
+
+            loss_gen = loss_g.detach().cpu()
+            loss_dis = loss_d.detach().cpu()
+
             if self._verbose:
-                print(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
-                      f"Loss D: {loss_d.detach().cpu(): .4f}",
+                print(f"Epoch {i+1}, Loss G: {loss_gen: .4f},"
+                      f"Loss D: {loss_dis: .4f}",
                       flush=True)
+
+            if plot:
+                losses['g'].append(loss_gen)
+                losses['d'].append(loss_dis)
+
+
+        if plot:
+            plt.figure()
+            plt.xticks(range(1, len(losses['g'])))
+            plt.plot(losses['g'], label='Generator')
+            plt.plot(losses['d'], label='Discriminator')
+            plt.title('Training loss')
+            plt.legend()
+
+            timestamp = datetime.datetime.now().strftime('%m-%d_%H-%M-%S')
+            plt.savefig(os.path.join(plot_dir, f'client_{timestamp}.png'))
 
     def sample(self, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.

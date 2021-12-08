@@ -11,11 +11,13 @@ from ctgan.synthesizers.ctgan import CTGANSynthesizer
 from ctgan.synthesizers.tvae import TVAESynthesizer
 from ctgan.synthesizers.dp_ctgan import DPCTGANSynthesizer
 from ctgan.synthesizers.adp_ctgan import ADPCTGANSynthesizer
+from ctgan.synthesizers.fl_dpctgan import FLDPCTGANSynthesizer
 
 
 __all__ = (
     'CTGANSynthesizer',
     'TVAESynthesizer',
     'DPCTGANSynthesizer',
+    'FLDPCTGANSynthesizer',
     'load_demo'
 )

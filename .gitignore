@@ -104,3 +104,4 @@ ENV/
 
 # Vim
 .*.swp
+/fl/poetry.lock
