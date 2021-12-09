@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # from ctgan import CTGANSynthesizer
-from ctgan import FLDPCTGANSynthesizer as CTGANSynthesizer
+from ctgan import DPCTGANSynthesizer as CTGANSynthesizer
 from ctgan import load_demo
 from fl.utils import convert_adult_ds, eval_dataset
 
@@ -26,7 +26,8 @@ discrete_columns = [
 ]
 
 # central server
-ctgan = CTGANSynthesizer(epochs=2, train_data=data, discrete_columns=discrete_columns)
+print('Init central server\n')
+ctgan = CTGANSynthesizer(epochs=3, verbose=True, target_epsilon=3)
 # train
 ctgan.fit(data, discrete_columns)
 
@@ -40,8 +41,7 @@ params = [0 for _ in range(len(ctgan._generator.state_dict().keys()))]
 # distribute generator's state_dict
 N = 3 # client count
 for i in range(N):
-    client = CTGANSynthesizer(verbose=True, epochs=3, train_data=data,
-                              discrete_columns=discrete_columns)
+    client = CTGANSynthesizer(epochs=3, verbose=True, target_epsilon=3)
     client._generator = ctgan._generator
     print('loading server state_dict(). Start training')
     client.fit(data, discrete_columns)
