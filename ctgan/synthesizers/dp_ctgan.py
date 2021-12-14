@@ -15,6 +15,9 @@ from ctgan.data_sampler import DataSampler
 from ctgan.data_transformer import DataTransformer
 from ctgan.rdp_accountant import compute_rdp, get_privacy_spent
 
+import random
+torch.manual_seed(random.randint(0, 1000))
+
 
 # Basic differential private CTGAN Synthesizer
 class DPCTGANSynthesizer(CTGANSynthesizer):
