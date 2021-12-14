@@ -24,13 +24,14 @@ discrete_columns = [
     'native-country',
     'income'
 ]
+N = 3 # client count
+target_epsilon = 1
 
 # central server
 print('Init central server\n')
-ctgan = CTGANSynthesizer(epochs=3, verbose=True, target_epsilon=3)
+ctgan = CTGANSynthesizer(epochs=3, verbose=True, target_epsilon=target_epsilon)
 # train
 ctgan.fit(data, discrete_columns)
-
 params = [0 for _ in range(len(ctgan._generator.state_dict().keys()))]
 
 
@@ -39,24 +40,36 @@ params = [0 for _ in range(len(ctgan._generator.state_dict().keys()))]
     - break down the dataset so each client uses different data
 """
 # distribute generator's state_dict
-N = 3 # client count
+cmp_shape = [val.cpu().numpy().shape[0] \
+             for val in ctgan._generator.state_dict().values() if val.cpu().numpy().shape]
+print(cmp_shape)
 for i in range(N):
-    client = CTGANSynthesizer(epochs=3, verbose=True, target_epsilon=3)
+    client = CTGANSynthesizer(epochs=3, verbose=True, target_epsilon=target_epsilon)
     client._generator = ctgan._generator
-    print('loading server state_dict(). Start training')
+    print('...loading server state_dict(). Start training')
     client.fit(data, discrete_columns)
     client.plot_losses(save=True)
     # client.fit(data, discrete_columns, plot=True, plot_dir=os.getcwd())
     print(f'finish client {i} training')
-    k = 0
-    for _, val in client._generator.state_dict().items():
-        params[k] += val.cpu().numpy()
-        k += 1
-    print(f'save client {i} state')
+    SELECTED = 0
+    client_shape = [val.cpu().numpy().shape[0] \
+                    for val in client._generator.state_dict().values() if val.cpu().numpy().shape]
+    # TODO: prevent broadcast different size
+    if client_shape == cmp_shape:
+        SELECTED += 1
+        k = 0
+        for key, val in client._generator.state_dict().items():
+            p = val.cpu().numpy()
+            params[k] += p
+            k += 1
+        print(f'save client {i} state')
+    else:
+        print('State_dict shape mismatched. Ditch this client model...')
 
 # averaging
-params = [ el/N for el in params]
-print('\nAveraging params...')
+print(f'{SELECTED} clients selected.')
+params = [el/SELECTED for el in params]
+print(f'\nAveraging params from {SELECTED} clients...')
 
 # send back to server
 params_dict = zip(ctgan._generator.state_dict().keys(), params)
@@ -65,7 +78,7 @@ ctgan._generator.load_state_dict(state_dict, strict=False)
 print('Send back to server.')
 
 # Synthetic copy
-samples = ctgan.sample(1000)
+samples = ctgan.sample(len(data))
 print('Sampling from the aggregated model...')
 
 _data = convert_adult_ds(samples)
